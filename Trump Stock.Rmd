@@ -89,14 +89,10 @@ trains['date']=pd.to_datetime(trains['date'])
 print(trains.head())
 ```
 
-```{R , warning=F,message=F}
-data<-py$trains
-invisible(getSymbols('SPY',src='yahoo',from='2018-01-10',verbose=F))
-data$date<-date(data$date)
-chartSeries(SPY)
-```
 
 ```{R message=F,tidy=T}
+data<-py$trains
+data$date<-date(data$date)
 prices<-fread('SPY.csv',col.names = c('date','price'))
 prices$date<-mdy(prices$date)
 data<-right_join(data,prices,by='date')
@@ -105,6 +101,7 @@ train<-as_tsibble(data[1:round(nrow(data)*.95-1,0),],index=date)
 test<-as_tsibble(data[round(nrow(data)*.95-1,0):nrow(data),],index=date)
 data.table(data)
 ```
+
 ```{R}
 data %>% gg_tsdisplay(price,plot_type='partial')
 ```
