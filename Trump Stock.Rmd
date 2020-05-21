@@ -19,13 +19,13 @@ library(e1071)
 library(doParallel)
 cl<-makeCluster(7)
 registerDoParallel(cl)
-future::plan('multicore')
 library(DT)
 library(feasts)
 library(caret)
 library(fable)
 library(data.table)
 library(tsibble)
+use_condaenv('data',required=T)
 ```
 
 ```{R}
@@ -56,13 +56,9 @@ import spacy
 import string
 from spacy.tokens import DocBin
 import os
-is_using_gpu = spacy.prefer_gpu()
-if is_using_gpu:
-    torch.set_default_tensor_type("torch.cuda.FloatTensor")
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 ```
 
-```{Python}
+```{python}
 from spacy_transformers import TransformersLanguage, TransformersWordPiecer, TransformersTok2Vec
 name = "bert-base-uncased"
 nlp = TransformersLanguage(trf_name=name, meta={"lang": "en"})
@@ -71,7 +67,6 @@ nlp.add_pipe(TransformersWordPiecer.from_pretrained(nlp.vocab, name))
 nlp.add_pipe(TransformersTok2Vec.from_pretrained(nlp.vocab, name))
 print(nlp.pipe_names) 
 ```
-
 
 ```{python}
 trains=r.data
@@ -83,12 +78,11 @@ trains['text']=pd.Series(cleaning)
 trains.head()
 ```
 
-```{python}
+```{python warning=F}
 trains.shape
 trains['date']=pd.to_datetime(trains['date'])
 print(trains.head())
 ```
-
 
 ```{R message=F,tidy=T}
 data<-py$trains
