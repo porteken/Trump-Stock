@@ -26,6 +26,7 @@ library(caret)
 library(fable)
 library(data.table)
 library(tsibble)
+use_condaenv('data',required=T)
 ```
 
 ```{R}
@@ -56,13 +57,14 @@ import spacy
 import string
 from spacy.tokens import DocBin
 import os
+import cupy
 is_using_gpu = spacy.prefer_gpu()
 if is_using_gpu:
     torch.set_default_tensor_type("torch.cuda.FloatTensor")
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 ```
 
-```{Python}
+```{python}
 from spacy_transformers import TransformersLanguage, TransformersWordPiecer, TransformersTok2Vec
 name = "bert-base-uncased"
 nlp = TransformersLanguage(trf_name=name, meta={"lang": "en"})
@@ -72,11 +74,10 @@ nlp.add_pipe(TransformersTok2Vec.from_pretrained(nlp.vocab, name))
 print(nlp.pipe_names) 
 ```
 
-
 ```{python}
 trains=r.data
 nlp = spacy.load("en_trf_bertbaseuncased_lg")
-cleaning= list(nlp.pipe(trains['text'],n_threads=16, batch_size=10000))
+cleaning= list(nlp.pipe(trains['text']))
 trains['score']=pd.Series([doc.vector_norm for doc in cleaning])
 cleaning=[doc.text for doc in cleaning]
 trains['text']=pd.Series(cleaning)
