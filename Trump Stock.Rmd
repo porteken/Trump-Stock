@@ -11,7 +11,6 @@ editor_options:
 ```{R message=F}
 rm(list=ls())
 gc()
-pacman::p_load(tidyverse,reticulate,quantmod,rtweet,data.table,lubridate,e1071,doParallel,DT,feasts,caret,future,fable,data.table,tsibble,install = T,update=T)
 library(tidyverse)
 library(reticulate)
 library(quantmod)
@@ -20,8 +19,6 @@ library(data.table)
 library(lubridate)
 library(e1071)
 library(doParallel)
-cl<-makeCluster(7)
-registerDoParallel(cl)
 future::plan('multicore')
 library(DT)
 library(feasts)
@@ -50,10 +47,9 @@ data<-data %>% mutate(importance=(retweet_count+favorite_count)/2) %>% select(te
 data<-data %>% filter(text!='') %>% group_by(date) %>% top_n(1,importance) %>% select(-one_of('importance'))
 ```
 
-```{python}
+```{python warnings=F}
 import numpy as np
 import pandas as pd
-import torch
 from numpy.testing import assert_almost_equal
 import re
 import spacy
@@ -61,6 +57,7 @@ import string
 from spacy.tokens import DocBin
 import os
 import cupy
+import torch
 is_using_gpu = spacy.prefer_gpu()
 if is_using_gpu:
     torch.set_default_tensor_type("torch.cuda.FloatTensor")
@@ -96,11 +93,13 @@ print(trains.head())
 
 ```{R message=F,tidy=T}
 data<-py$trains
+py_gc <- import("gc")
+py_gc$collect()
 data$date<-date(data$date)
 prices<-fread('SPY.csv',col.names = c('date','price'))
 prices$date<-mdy(prices$date)
 data<-right_join(data,prices,by='date')
-data<-as_tsibble(data,index=date)  %>% tsibble::fill_gaps(.full = T) %>% fill(price,.direction='down') %>% fill(score,.direction = 'down') %>% filter(score>0)
+data<-as_tsibble(data,index=date)  %>% tsibble::fill_gaps(.full = TRUE) %>% fill(price,.direction='down') %>% fill(score,.direction = 'down') %>% filter(score>0)
 train<-as_tsibble(data[1:round(nrow(data)*.95-1,0),],index=date)
 test<-as_tsibble(data[round(nrow(data)*.95-1,0):nrow(data),],index=date)
 data.table(data)
