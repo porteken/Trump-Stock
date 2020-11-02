@@ -13,8 +13,6 @@ rm(list=ls())
 gc()
 library(tidyverse)
 library(reticulate)
-library(quantmod)
-library(rtweet)
 library(data.table)
 library(lubridate)
 library(e1071)
@@ -30,10 +28,11 @@ use_condaenv('data',required=T)
 ```
 
 ```{R}
-data<-fread('train.csv')
-data$created_at<-with_tz(parse_date_time(data$created_at,'%m/%d/%Y H:M'),tzone='US/Central')
+data<-fread('train.csv',quote="")
+data<-data[!is.na(data$created_at)]
+data$created_at<-with_tz(parse_date_time(data$created_at,'%m-%d-%Y %HMS'),tzone='US/Central')
 dim(data)
-data<-data %>% filter(is_retweet==F & favorite_count>0) %>% select(-one_of('is_retweet')) %>% mutate(date=if_else(am(created_at),date(created_at),date(created_at+days(1)))) %>% select(-one_of('created_at'))
+data<-data %>% filter(is_retweet==F & favorite_count>0) %>% select(-one_of('is_retweet')) %>% mutate(date=if_else(am(created_at),date(created_at),date(created_at+days(1)))) %>% select(-one_of('created_at')) 
 dim(data)
 ```
 ```{R}
@@ -87,6 +86,7 @@ trains.head()
 ```{python}
 trains.shape
 trains['date']=pd.to_datetime(trains['date'])
+trains.dropna(axis=1,inplace=True)
 print(trains.head())
 ```
 
@@ -96,8 +96,9 @@ data<-py$trains
 py_gc <- import("gc")
 py_gc$collect()
 data$date<-date(data$date)
-prices<-fread('SPY.csv',col.names = c('date','price'))
-prices$date<-mdy(prices$date)
+prices<-fread('SPY.csv') %>% select('Date','Close')
+names(prices)<-c('date','price')
+prices$date<-ymd(prices$date)
 data<-right_join(data,prices,by='date')
 data<-as_tsibble(data,index=date)  %>% tsibble::fill_gaps(.full = TRUE) %>% fill(price,.direction='down') %>% fill(score,.direction = 'down') %>% filter(score>0)
 train<-as_tsibble(data[1:round(nrow(data)*.95-1,0),],index=date)
